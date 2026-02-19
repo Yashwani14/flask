@@ -1,40 +1,48 @@
-# ---------- Build stage (compile uwsgi wheels, etc.) ----------
+# ---------- Build stage ----------
 FROM python:3.11-alpine AS builder
 
-# uWSGI build deps (C compiler, headers)
+# Build deps needed for compiling wheels (uWSGI, etc.)
 RUN apk add --no-cache linux-headers build-base
 
 WORKDIR /install
 
-# Copy just requirements first to leverage layer caching
+# Install Python deps into a relocatable prefix we can copy later
 COPY requirements.txt /requirements.txt
 RUN pip install --no-cache-dir --upgrade pip \
  && pip install --no-cache-dir --prefix=/install -r /requirements.txt
 
-# ---------- Runtime stage (slim) ----------
+# ---------- Runtime stage ----------
 FROM python:3.11-alpine
 
-# Copy wheels/site-packages from builder
-COPY --from=builder /install /usr/local
-
-# Create a non-root user
+# Create non-root user
 RUN adduser -D dummyuser
 
-# Create app dir and copy the entire repo content (since app.py, conf.ini, setup.py are at root)
+# Copy site-packages and scripts from builder
+COPY --from=builder /install /usr/local
+
+# Workdir + app code
 WORKDIR /app
 COPY . /app
 
-# Ensure the non-root user owns the working dir (sqlite writes, etc.)
+# Ownership for runtime writes (e.g., sqlite, logs)
 RUN chown -R dummyuser:dummyuser /app
 USER dummyuser
 
-# Initialize sqlite DB once (your setup.py should handle idempotency)
-# If setup.py creates/updates database.db, keep this line;
-# otherwise, you can remove both RUN lines below.
-RUN touch database.db
-RUN python ./setup.py
+# If your app truly needs a pre-created sqlite file, keep this line; else remove it.
+# RUN touch database.db
 
 EXPOSE 8080
 
-# conf.ini is at /app/conf.ini (copied above), so point uwsgi to it explicitly
+# IMPORTANT: Your conf.ini must exist at /app/conf.ini and point to the correct module
+# Example conf.ini:
+# [uwsgi]
+# module = app:app
+# master = true
+# processes = 2
+# threads = 4
+# http-socket = 0.0.0.0:8080
+# vacuum = true
+# die-on-term = true
+
 CMD ["uwsgi", "--ini", "/app/conf.ini"]
+``
