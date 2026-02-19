@@ -1,0 +1,5 @@
+apiVersion: v2
+name: flask-demo
+version: 1.0.0
+description: Simple Python Flask Helm chart
+type: application
