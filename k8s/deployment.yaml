@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: flask-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: flask-app
+  template:
+    metadata:
+      labels:
+        app: flask-app
+    spec:
+      containers:
+      - name: flask-app
+        image: python:3.11-slim
+        ports:
+        - containerPort: 8080
+        command: ["sh", "-c"]
+        args:
+          - pip install -r requirements.txt &&
+            gunicorn app:app --bind 0.0.0.0:8080
