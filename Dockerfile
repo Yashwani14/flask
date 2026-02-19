@@ -45,4 +45,3 @@ EXPOSE 8080
 # die-on-term = true
 
 CMD ["uwsgi", "--ini", "/app/conf.ini"]
-``
