@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/Yashwani14/flask.git
     targetRevision: master       # change if your branch is different
-    path: helm                   # your chart lives here
+    path: app/helm                   # your chart lives here
   destination:
     server: https://kubernetes.default.svc
     namespace: flask-demo
